@@ -1,0 +1,178 @@
+﻿@model jmannionBlog.Models.BlogPost
+
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Details</title>
+</head>
+<body>
+    <div>
+        <h2>My Insipration</h2>
+        <hr />
+        <dl class="dl-horizontal">
+          @*  <dt>
+                @Html.DisplayNameFor(model => model.Created)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Created)
+            </dd>*@
+    
+            <dt>
+               @*Html.DisplayNameFor(model => model.Updated)*@
+            </dt>
+    
+            <dd>
+               @* @Html.DisplayFor(model => model.Updated)*@
+            </dd>
+    
+            <dt>
+                @Html.DisplayNameFor(model => model.Title)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Title)
+            </dd>
+    
+            <dt>
+             @*   @Html.DisplayNameFor(model => model.Slug)*@
+            </dt>
+    
+            <dd>
+               @* @Html.DisplayFor(model => model.Slug)*@
+            </dd>
+    
+            <dt>
+               @* @Html.DisplayNameFor(model => model.Body)*@
+            </dt>
+    
+            <dd>
+                @Html.Raw(Model.Body)
+            </dd>
+    
+            <dt>
+              @*  @Html.DisplayNameFor(model => model.MediaURL)*@
+            </dt>
+    
+            <dd>
+                <img src="@Model.MediaURL" class="img-responsive" alt="" />
+               @* @Html.DisplayFor(model => model.MediaURL)*@
+            </dd>
+
+            @*<dt>
+                @Html.DisplayNameFor(model => model.Created)
+            </dt>*@
+
+            <dd>
+               Blog Post Created on: @Html.DisplayFor(model => model.Created)
+            </dd>
+
+    
+          @*  <dt>
+                @Html.DisplayNameFor(model => model.Published)
+            </dt>
+    
+            <dd>
+                @Html.DisplayFor(model => model.Published)
+            </dd>*@
+    
+        </dl>
+    </div>
+<hr />
+    <div class="container">
+
+        @if (Model.Comments.Count == 0)
+        {
+            <h4 class="bg-primary">No Comments</h4>
+        }
+
+        @foreach (var Comment in Model.Comments.OrderByDescending(c => c.Created))
+        {
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                    <div class="post-preview">
+                        <div class="row">
+                            <div class="col-sm-12">
+                                </div>
+                            <p>  @Html.Raw(Comment.Body)</p>
+                            <p> Comment Created on  @Html.DisplayFor(modelItem => Comment.Created) By : @Comment.Author.DisplayName</p>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            if (User.IsInRole("Admin") || User.IsInRole("Moderator"))
+            {
+    <div class="row">
+        <div class="col-sm-12">
+            <a href="@(Url.Action("Edit", "Comments", new { id = Comment.Id }))">Edit a comment</a>
+            <span><small> || </small></span>
+            <a href="@(Url.Action("Delete", "Comments", new { id = Comment.Id }))">Delete A Comment</a>
+        </div>
+    </div>
+            }
+        }
+
+    <hr />
+        <div class="container">
+            @if (User.Identity.IsAuthenticated)
+            {
+                using (Html.BeginForm("Create", "Comments", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="PostId" value="@Model.Id" />
+                  @*@Html.HiddenFor(model => model.Id)*@
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <h2>Please leave a comment...</h2>
+                        </div>
+                    </div>
+                    <div class="form-horizontal">
+                        <div class="form-group">
+                            <textarea class="form-control" id="comment" name="body" rows="6"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <input type="submit" value="submit a comment" class="btn btn-default" />
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <p>Please Login to Comment on the Blog Post</p>
+            }
+        </div>
+
+                            <p>
+                                @if (User.IsInRole("Admin"))
+                                {
+                                @Html.ActionLink("Edit Your Blog Post | ", "Edit", new { id = Model.Id }); 
+                                    
+                                @Html.ActionLink("Delete Your Blog Post | ", "Delete", new { id = Model.Id })                                                       }|
+                                
+                            @Html.ActionLink("Back to Blogs | ", "Index", "Home") 
+                            @if (User.IsInRole("Admin"))
+                            {       @Html.ActionLink("Blog Index ", "Index")
+                            }
+                           </p>
+@section scripts{
+    <script src="~/Scripts/tinymce/tinymce.js"></script>
+    <script src="~/Scripts/tinymce/jquery.tinymce.min.js"></script>
+
+    <script type="text/javascript">
+        $(function () {
+            $("#comment").tinymce({});
+
+        });
+
+    </script>
+}
+
+
+</body>
+</html>

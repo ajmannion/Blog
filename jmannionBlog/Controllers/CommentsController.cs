@@ -1,0 +1,162 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.Entity;
+using System.Linq;
+using System.Net;
+using System.Web;
+using System.Web.Mvc;
+using jmannionBlog.Models;
+using Microsoft.AspNet.Identity;
+
+namespace jmannionBlog.Controllers
+{
+    [RequireHttps]
+    public class CommentsController : Controller
+    {
+       
+        private ApplicationDbContext db = new ApplicationDbContext();
+
+        // GET: Comments
+        public ActionResult Index()
+        {
+            var comments = db.Comments.Include(c => c.Author).Include(c => c.Post).Take(5).ToList();
+            return View(comments.ToList());
+        }
+
+        // GET: Comments/Details/5
+        public ActionResult Details(int? id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            Comment comment = db.Comments.Find(id);
+            if (comment == null)
+            {
+                return HttpNotFound();
+            }
+            return View(comment);
+        }
+
+        // GET: Comments/Create
+        [Authorize]
+        public ActionResult Create()
+        {
+            ViewBag.AuthorId = new SelectList(db.Users, "Id", "FirstName");
+            ViewBag.PostId = new SelectList(db.Posts, "Id", "Title");
+            return View();
+        }
+
+        // POST: Comments/Create
+        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
+        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public ActionResult Create([Bind(Include = "Id,PostId,Body")] Comment comment)
+        {
+            if (ModelState.IsValid)
+            {
+                comment.AuthorId = User.Identity.GetUserId();
+                comment.Created = DateTime.Now;
+                db.Comments.Add(comment);
+                db.SaveChanges();
+                var currentSlug = db.Posts.Find(comment.PostId).Slug;
+                return RedirectToAction("Details", "BlogPosts", new {slug = currentSlug});
+            }
+
+            ViewBag.AuthorId = new SelectList(db.Users, "Id", "FirstName", comment.AuthorId);
+            ViewBag.PostId = new SelectList(db.Posts, "Id", "Title", comment.PostId);
+            return View(comment);
+        }
+
+        // GET: Comments/Edit/5
+        [Authorize(Roles = "Moderator, Admin")]
+        public ActionResult Edit(int? id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            Comment comment = db.Comments.Find(id);
+            if (comment == null)
+            {
+                return HttpNotFound();
+            }
+            ViewBag.AuthorId = new SelectList(db.Users, "Id", "FirstName", comment.AuthorId);
+            ViewBag.PostId = new SelectList(db.Posts, "Id", "Title", comment.PostId);
+            return View(comment);
+        }
+
+        // POST: Comments/Edit/5
+        // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
+        // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Moderator, Admin")]
+        public ActionResult Edit([Bind(Include = "Id,PostId,AuthorId,Body,Created,Updated,UpdateReason")] Comment comment)
+        {
+            if (ModelState.IsValid)
+            {
+                //db.Entry(comment).State = EntityState.Modified;
+                comment.Created = DateTime.Now;
+                db.Comments.Attach(comment);
+                db.Entry(comment).Property("Body").IsModified = true;
+                db.Entry(comment).Property("AuthorId").IsModified = true;
+                db.Entry(comment).Property("Id").IsModified = true;
+                db.Entry(comment).Property("PostId").IsModified = true;
+                db.Entry(comment).Property("Updated").IsModified = true;
+                db.Entry(comment).Property("Created").IsModified = true;
+                //db.Entry(blogPost).Property("Id").IsModified = false;
+                //db.Entry(blogPo
+                db.SaveChanges();
+                var currentSlug = db.Posts.Find(comment.PostId).Slug;
+                return RedirectToAction("Details", "BlogPosts", new { slug = currentSlug});
+            }
+            ViewBag.AuthorId = new SelectList(db.Users, "Id", "FirstName", comment.AuthorId);
+            ViewBag.PostId = new SelectList(db.Posts, "Id", "Title", comment.PostId);
+            return View(comment);
+        }
+
+        // GET: Comments/Delete/5
+        [Authorize(Roles =  "Admin, Moderator")]
+        public ActionResult Delete(int? id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+            Comment comment = db.Comments.Find(id);
+            if (comment == null)
+            {
+                return HttpNotFound();
+            }
+            return View(comment);
+        }
+
+        // POST: Comments/Delete/5
+        [HttpPost, ActionName("Delete")]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin, Moderator")]
+
+        public ActionResult DeleteConfirmed(int id)
+        {
+            Comment comment = db.Comments.Find(id);
+            db.Comments.Remove(comment);
+            db.SaveChanges();
+            var currentSlug = db.Posts.Find(comment.PostId).Slug;
+            return RedirectToAction("Details", "BlogPosts", new { slug = currentSlug });
+            //return RedirectToAction("Index");
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                db.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+    }
+}
